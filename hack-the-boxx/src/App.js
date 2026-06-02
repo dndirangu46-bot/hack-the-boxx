@@ -31,7 +31,6 @@ function App() {
     { rank: 4, handle: 'NetSpy', score: 140, tier: 'Hacker' },
   ]);
 
-  // Auto-scroll terminal to the bottom whenever logs update
   useEffect(() => {
     if (terminalEndRef.current) {
       terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -76,16 +75,15 @@ function App() {
     }
   };
 
-  // COMMAND LINE PROCESSOR ENGINE
+  // EXTENDED COMMAND LINE PROCESSOR ENGINE
   const handleTerminalSubmit = (e) => {
     e.preventDefault();
     const command = terminalInput.trim();
     if (!command) return;
 
     let newLogs = [...terminalLogs, `hacker@kali:~$ ${command}`];
-    const parts = command.toLowerCase().split(' ');
-    const baseCmd = parts[0];
-    const targetIp = parts[1];
+    const parts = command.split(' ');
+    const baseCmd = parts[0].toLowerCase();
 
     switch (baseCmd) {
       case 'help':
@@ -95,7 +93,8 @@ function App() {
           '  clear                          Purge active terminal display screen logs.',
           '  whoami                         Print current operator clearance profile.',
           '  nmap [target_ip]               Execute a service probe footprint map.',
-          '  cat flag.txt                   Attempt direct local matrix token read.'
+          '  hydra -l [user] -P [list] [ip] ssh   Execute dictionary brute-force target parameters.',
+          '  curl -H [header] [ip]          Craft customized network exploitation requests.'
         );
         break;
       case 'clear':
@@ -105,25 +104,17 @@ function App() {
       case 'whoami':
         newLogs.push('identity: operator_dev // active_clearance: level_3_pentester');
         break;
-      case 'cat':
-        if (parts[1] === 'flag.txt') {
-          newLogs.push('[-] Permission Denied: Target flag filesystem isolated. Extract tokens via exploit verification engine.');
-        } else {
-          newLogs.push(`cat: ${parts[1] || 'file'}: No such file or directory in localized scope.`);
-        }
-        break;
       case 'nmap':
-        if (!targetIp) {
+        const targetIpNmap = parts[1];
+        if (!targetIpNmap) {
           newLogs.push('Usage Error: nmap [target_ip] -> example: nmap 10.10.10.42');
         } else {
-          // Cross-reference IP with active target states
-          const matchedMachine = machines.find(m => m.ip === targetIp);
+          const matchedMachine = machines.find(m => m.ip === targetIpNmap);
           if (!matchedMachine) {
-            newLogs.push(`[!] Route Discovery Fault: No routing table link found for network node ${targetIp}.`);
+            newLogs.push(`[!] Route Discovery Fault: No link found for network node ${targetIpNmap}.`);
           } else if (matchedMachine.status !== 'Running') {
-            newLogs.push(`CRITICAL: Host ${targetIp} appears down. Network ping dropped. Spawning target box required.`);
+            newLogs.push(`CRITICAL: Host ${targetIpNmap} appears down. Target instance must be spawned.`);
           } else {
-            // Target is running! Output specific simulated vulnerabilities
             newLogs.push(`Starting Nmap 7.92 reconnaissance probe at node ${matchedMachine.ip}...`);
             if (matchedMachine.id === 1) {
               newLogs.push('PORT      STATE SERVICE VERSION', '445/tcp   open  microsoft-ds Windows Server 2003 SMBv1', '[+] VULNERABILITY DETECTED: MS08-067 Remote Code Execution Handshake possible.');
@@ -135,11 +126,60 @@ function App() {
           }
         }
         break;
+      case 'hydra':
+        // Rudimentary parsing checking for common syntax configurations
+        const hasUser = command.includes('-l');
+        const hasPass = command.includes('-P');
+        const searchIp = parts.find(p => p.startsWith('10.10.10.'));
+
+        if (!hasUser || !hasPass || !searchIp) {
+          newLogs.push('Usage Error: hydra -l [user] -P [wordlist] [target_ip] ssh');
+        } else {
+          const matchedMachine = machines.find(m => m.ip === searchIp);
+          if (!matchedMachine || matchedMachine.status !== 'Running') {
+            newLogs.push(`[!] Connection Refused: Node ${searchIp || 'target'} unreachable or target instance down.`);
+          } else if (matchedMachine.id === 2) {
+            newLogs.push(
+              'Hydra v9.2 initializing parallel target cracking dictionary configurations...',
+              '[STATUS] Attacking service ssh on port 22...',
+              '[-] [ssh] user: admin - password: password123 - Access Denied',
+              '[-] [ssh] user: admin - password: root - Access Denied',
+              '[!] Alert: Service profile locked out. Hint: Nmap output noted port 80 HTTP vulnerability payload vector, not SSH dictionary authentication vectors.'
+            );
+          } else {
+            newLogs.push('Hydra v9.2: Running iterations... Target service profile dropped network packet arrays.');
+          }
+        }
+        break;
+      case 'curl':
+        const targetIpCurl = parts.find(p => p.startsWith('10.10.10.'));
+        const containsUserAgentHeader = command.toLowerCase().includes('user-agent');
+
+        if (!targetIpCurl) {
+          newLogs.push('Usage Error: curl -H "Header: payload" [target_ip]');
+        } else {
+          const matchedMachine = machines.find(m => m.ip === targetIpCurl);
+          if (!matchedMachine || matchedMachine.status !== 'Running') {
+            newLogs.push(`[-] curl: (7) Failed to connect to ${targetIpCurl} port 80: Connection refused`);
+          } else if (matchedMachine.id === 2 && containsUserAgentHeader) {
+            newLogs.push(
+              'Sending HTTP exploit vector footprint...',
+              'HTTP/1.1 200 OK',
+              'Server: Apache/2.4.41 (Ubuntu)',
+              'Connection: close',
+              '',
+              `[+] Exploit Execution Successful! Token extracted: ${matchedMachine.realFlag}`
+            );
+          } else {
+            newLogs.push('HTTP/1.1 200 OK', 'Content-Type: text/html', '', 'Welcome to index page layout frame. No administrative variables accessible.');
+          }
+        }
+        break;
       default:
         newLogs.push(`bash: command not found: ${baseCmd}. Input "help" for environment listing.`);
     }
 
-    newLogs.push(''); // Add spacing blank line
+    newLogs.push('');
     setTerminalLogs(newLogs);
     setTerminalInput('');
   };
@@ -232,10 +272,10 @@ function App() {
             ))}
           </div>
 
-          {/* TWO PANEL MIDSECTION: Briefing + Interactive Terminal */}
+          {/* TWO PANEL MIDSECTION */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             
-            {/* Challenge Briefing Panel */}
+            {/* Challenge Briefing */}
             <div style={{ backgroundColor: '#141419', padding: '20px', borderRadius: '6px', border: '1px solid #222', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -253,9 +293,8 @@ function App() {
               </div>
             </div>
 
-            {/* INTERACTIVE LIVE TERMINAL SIMULATOR */}
+            {/* LIVE TERMINAL SIMULATOR */}
             <div style={{ backgroundColor: '#050507', border: '1px solid #222', borderRadius: '6px', display: 'flex', flexDirection: 'column', height: '300px', overflow: 'hidden' }}>
-              {/* Terminal Header Bar */}
               <div style={{ backgroundColor: '#111116', padding: '8px 15px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
@@ -263,17 +302,20 @@ function App() {
                 <span style={{ color: '#666', fontSize: '11px', marginLeft: '10px' }}>sh / terminal_instance_kali</span>
               </div>
 
-              {/* Terminal Logs Display area */}
               <div style={{ flex: 1, padding: '15px', overflowY: 'auto', fontSize: '12px', color: '#00ff00', lineHeight: '1.5' }}>
                 {terminalLogs.map((log, index) => (
-                  <div key={index} style={{ whiteSpace: 'pre-wrap', color: log.startsWith('hacker@') ? '#9fe52a' : log.includes('VULNERABILITY') ? '#ffbb00' : log.includes('CRITICAL') ? '#ff4444' : '#00ff00' }}>
+                  <div key={index} style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    color: log.startsWith('hacker@') ? '#9fe52a' : 
+                           log.includes('VULNERABILITY') || log.includes('[!]') ? '#ffbb00' : 
+                           log.includes('CRITICAL') || log.includes('Usage Error') ? '#ff4444' : '#00ff00' 
+                  }}>
                     {log}
                   </div>
                 ))}
                 <div ref={terminalEndRef} />
               </div>
 
-              {/* Terminal Input Form */}
               <form onSubmit={handleTerminalSubmit} style={{ borderTop: '1px solid #222', display: 'flex', backgroundColor: '#0a0a0f' }}>
                 <span style={{ color: '#9fe52a', padding: '10px 0 10px 15px', fontSize: '12px', fontWeight: 'bold' }}>hacker@kali:~$</span>
                 <input 
